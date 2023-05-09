@@ -109,17 +109,27 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 	 */
 	protected AutoConfigurationEntry getAutoConfigurationEntry(AutoConfigurationMetadata autoConfigurationMetadata,
 			AnnotationMetadata annotationMetadata) {
+		// 获取是否有配置 spring.boot.enableautoconfiguration 属性，默认返回 true
 		if (!isEnabled(annotationMetadata)) {
 			return EMPTY_ENTRY;
 		}
 		AnnotationAttributes attributes = getAttributes(annotationMetadata);
+		// 1.获取 spring.factories 文件配置的所有自动配置类
 		List<String> configurations = getCandidateConfigurations(annotationMetadata, attributes);
+		// 利用 LinkedHashSet 移除重复的配置类
 		configurations = removeDuplicates(configurations);
+		// 得到要排除的自动配置类，比如注解属性 exclude 的配置类
+		// 比如：@SpringBootApplication(exclude = FreeMarkerAutoConfiguration.class)，将会获取到 exclude = FreeMarkerAutoConfiguration.class 的注解数据
 		Set<String> exclusions = getExclusions(annotationMetadata, attributes);
+		// 检查要被排除的配置类，因为有些不是自动配置类，故要抛出异常
 		checkExcludedClasses(configurations, exclusions);
+		// 2.将要排除的配置类移除
 		configurations.removeAll(exclusions);
+		// 3.因为从 spring.factories 文件获取的自动配置类太多，如果有些不必要的自动配置类都加载进内存，会造成内存浪费，因此这里需要进行过滤
 		configurations = filter(configurations, autoConfigurationMetadata);
+		// 4.获取了符合条件的自动配置类后，此时触发 AutoConfigurationImportEvent 事件，目的是告诉 ConditionEvaluationReport 条件评估报告器对象，来记录符合条件的自动配置类
 		fireAutoConfigurationImportEvents(configurations, exclusions);
+		// 5.将符合条件和要排除的自动配置类封装进 AutoConfigurationEntry 对象，并返回
 		return new AutoConfigurationEntry(configurations, exclusions);
 	}
 
@@ -168,10 +178,15 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 	 * @return a list of candidate configurations
 	 */
 	protected List<String> getCandidateConfigurations(AnnotationMetadata metadata, AnnotationAttributes attributes) {
+
+		// 这个方法需要传入两个参数 getSpringFactoriesLoaderFactoryClass() 和 getBeanClassLoader();
+		// getSpringFactoriesLoaderFactoryClass() 这个方法返回的是 EnableAutoConfiguration.class
+		// getBeanClassLoader() 这个方法返回的是 beanClassLoader（类加载器）
 		List<String> configurations = SpringFactoriesLoader.loadFactoryNames(getSpringFactoriesLoaderFactoryClass(),
 				getBeanClassLoader());
 		Assert.notEmpty(configurations, "No auto configuration classes found in META-INF/spring.factories. If you "
 				+ "are using a custom packaging, make sure that file is correct.");
+		// 返回所有 classpath 下的 spring.factories 中配置的 org.springframework.boot.autoconfigure.EnableAutoConfiguration 对应的类的全限定类名
 		return configurations;
 	}
 
@@ -238,34 +253,52 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 
 	private List<String> filter(List<String> configurations, AutoConfigurationMetadata autoConfigurationMetadata) {
 		long startTime = System.nanoTime();
+		// 将从 spring.factories 中获取的自动配置类的全限定类名集合转成字符串数组
 		String[] candidates = StringUtils.toStringArray(configurations);
+		// 定义 skip 数组，是否需要跳过。注意 skip 数组与 candidates 数组顺序一一对应
 		boolean[] skip = new boolean[candidates.length];
+		// getAutoConfigurationImportFilters 方法：拿到 OnBeanCondition，OnClassCondition 和 OnWebApplicationCondition
+		// 然后遍历这三个条件类去过滤从 spring.factories 中加载的大量配置类
 		boolean skipped = false;
 		for (AutoConfigurationImportFilter filter : getAutoConfigurationImportFilters()) {
+			// 调用各种 Aware 方法，将 beanClassLoader, beanFactory 等注入到 filter 对象中，
+			// 这里的 filter 对象即 OnBeanCondition，OnClassCondition 或 OnWebApplicationCondition
 			invokeAwareMethods(filter);
+			// 通过各种 filter 来判断每个candidate（这里实质要通过candidate(自动配置类)拿到其标注的 @ConditionalOnClass,@ConditionalOnBean和@ConditionalOnWebApplication里面的注解值）是否匹配，
+			// 注意 candidates 数组与 match 数组一一对应
 			boolean[] match = filter.match(candidates, autoConfigurationMetadata);
+			// 遍历 match 数组，注意 match 顺序跟 candidates 的自动配置类一一对应
 			for (int i = 0; i < match.length; i++) {
+				// 若有不匹配的话
 				if (!match[i]) {
+					// 不匹配的将记录在skip数组，标志skip[i]为true，也与candidates数组一一对应
 					skip[i] = true;
+					// 因为不匹配，将相应的自动配置类置空
 					candidates[i] = null;
+					// 标注skipped为true
 					skipped = true;
 				}
 			}
 		}
+		// 如果所有自动配置类经过 OnBeanCondition，OnClassCondition 和 OnWebApplicationCondition 过滤后，全部都匹配的话，则全部原样返回
 		if (!skipped) {
 			return configurations;
 		}
+		// 建立 result 集合来装匹配的自动配置类
 		List<String> result = new ArrayList<>(candidates.length);
 		for (int i = 0; i < candidates.length; i++) {
+			// 若 skip[i] 为 false，则说明是符合条件的自动配置类，此时添加到result集合中
 			if (!skip[i]) {
 				result.add(candidates[i]);
 			}
 		}
+		// 打印日志
 		if (logger.isTraceEnabled()) {
 			int numberFiltered = configurations.size() - result.size();
 			logger.trace("Filtered " + numberFiltered + " auto configuration class in "
 					+ TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime) + " ms");
 		}
+		// 最后返回符合条件的自动配置类
 		return new ArrayList<>(result);
 	}
 
@@ -386,16 +419,21 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 			this.resourceLoader = resourceLoader;
 		}
 
+		// 这里用来处理自动配置类，比如过滤掉不符合匹配条件的自动配置类
 		@Override
 		public void process(AnnotationMetadata annotationMetadata, DeferredImportSelector deferredImportSelector) {
 			Assert.state(deferredImportSelector instanceof AutoConfigurationImportSelector,
 					() -> String.format("Only %s implementations are supported, got %s",
 							AutoConfigurationImportSelector.class.getSimpleName(),
 							deferredImportSelector.getClass().getName()));
+			// 1.调用 getAutoConfigurationEntry 方法得到自动配置类，放入 autoConfigurationEntry 对象中
 			AutoConfigurationEntry autoConfigurationEntry = ((AutoConfigurationImportSelector) deferredImportSelector)
 					.getAutoConfigurationEntry(getAutoConfigurationMetadata(), annotationMetadata);
+			// 2.又将封装了自动配置类的 autoConfigurationEntry 对象装进 autoConfigurationEntries 集合中
 			this.autoConfigurationEntries.add(autoConfigurationEntry);
+			// 3.遍历刚获取的自动配置类
 			for (String importClassName : autoConfigurationEntry.getConfigurations()) {
+				// 这里符合条件的自动配置类作为 key，annotationMetadata 作为值放进 entries 集合
 				this.entries.putIfAbsent(importClassName, annotationMetadata);
 			}
 		}
@@ -405,13 +443,17 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 			if (this.autoConfigurationEntries.isEmpty()) {
 				return Collections.emptyList();
 			}
+			// 获取所有要排除的自动配置类的set集合
 			Set<String> allExclusions = this.autoConfigurationEntries.stream()
 					.map(AutoConfigurationEntry::getExclusions).flatMap(Collection::stream).collect(Collectors.toSet());
+			// 获取经过滤后所有符合条件的自动配置类的 set 集合
 			Set<String> processedConfigurations = this.autoConfigurationEntries.stream()
 					.map(AutoConfigurationEntry::getConfigurations).flatMap(Collection::stream)
 					.collect(Collectors.toCollection(LinkedHashSet::new));
+			// 再次移除掉要排除的自动配置类
 			processedConfigurations.removeAll(allExclusions);
 
+			// 对标注有 @Order 注解的自动配置类进行排序
 			return sortAutoConfigurations(processedConfigurations, getAutoConfigurationMetadata()).stream()
 					.map((importClassName) -> new Entry(this.entries.get(importClassName), importClassName))
 					.collect(Collectors.toList());

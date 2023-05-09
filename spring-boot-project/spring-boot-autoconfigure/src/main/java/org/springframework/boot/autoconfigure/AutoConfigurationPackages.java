@@ -90,16 +90,24 @@ public abstract class AutoConfigurationPackages {
 	 * @param packageNames the package names to set
 	 */
 	public static void register(BeanDefinitionRegistry registry, String... packageNames) {
+		// 这里参数 packageNames 默认情况下就是一个字符串，是使用了注解 @SpringBootApplication 的 SpringBoot 应用程序入口类所在的包
+
+		// 判断 AutoConfigurationPackages 这个类(当前方法所在类自身)有没有被注册
 		if (registry.containsBeanDefinition(BEAN)) {
+			// 如果该 BeanDefinition 已经注册，则将要注册包名称添加进去
 			BeanDefinition beanDefinition = registry.getBeanDefinition(BEAN);
 			ConstructorArgumentValues constructorArguments = beanDefinition.getConstructorArgumentValues();
+			// 追加包信息
 			constructorArguments.addIndexedArgumentValue(0, addBasePackages(constructorArguments, packageNames));
 		}
 		else {
+			// 如果该 Bean 尚未注册，则将参数中提供的包名设置到 BeanDefinition 中，然后注册该 BeanDefinition，
 			GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
 			beanDefinition.setBeanClass(BasePackages.class);
+			// 设置包信息
 			beanDefinition.getConstructorArgumentValues().addIndexedArgumentValue(0, packageNames);
 			beanDefinition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
+			// 注册 BasePackages 的时候，BeanName 为当前类
 			registry.registerBeanDefinition(BEAN, beanDefinition);
 		}
 	}
@@ -118,11 +126,15 @@ public abstract class AutoConfigurationPackages {
 	 */
 	static class Registrar implements ImportBeanDefinitionRegistrar, DeterminableImports {
 
+		// 注册 Bean 的方法 (对应 @Import 的第二种用法，在接口方法中能拿到 BeanDefinitionRegistry (BD的注册器)，能手工往 beanDefinitionMap 中注册 BeanDefinition)
 		@Override
 		public void registerBeanDefinitions(AnnotationMetadata metadata, BeanDefinitionRegistry registry) {
+			// 将注解标注的元信息传入，获取到相应的包名
+			// 第二个参数的作用：将注解标注的元信息传入，获取到相应的包名 (以当前主线来讲，此处获取到的就是核心启动类所在的包的包名)
 			register(registry, new PackageImport(metadata).getPackageName());
 		}
 
+		// 和 ImportSelector 跟 ImportBeanDefinitionRegistrar 功能类似，但又有所区别，主要是这个方法的调用会早于 xxAware 接口方法
 		@Override
 		public Set<Object> determineImports(AnnotationMetadata metadata) {
 			return Collections.singleton(new PackageImport(metadata));

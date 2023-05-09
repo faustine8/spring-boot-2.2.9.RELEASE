@@ -79,8 +79,11 @@ import org.springframework.core.io.support.SpringFactoriesLoader;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Inherited
+// 自动配置包
 @AutoConfigurationPackage
+// Spring的底层注解@Import，给容器中导入一个组件;
 @Import(AutoConfigurationImportSelector.class)
+// 告诉 SpringBoot 开启自动配置功能，这样自动配置才能生效。
 public @interface EnableAutoConfiguration {
 
 	String ENABLED_OVERRIDE_PROPERTY = "spring.boot.enableautoconfiguration";
@@ -89,6 +92,7 @@ public @interface EnableAutoConfiguration {
 	 * Exclude specific auto-configuration classes such that they will never be applied.
 	 * @return the classes to exclude
 	 */
+	// 返回不会被导入到 Spring 容器中的类
 	Class<?>[] exclude() default {};
 
 	/**
@@ -97,6 +101,7 @@ public @interface EnableAutoConfiguration {
 	 * @return the class names to exclude
 	 * @since 1.3.0
 	 */
+	// 返回不会被导入到 Spring 容器中的类的全限定类名
 	String[] excludeName() default {};
 
 }

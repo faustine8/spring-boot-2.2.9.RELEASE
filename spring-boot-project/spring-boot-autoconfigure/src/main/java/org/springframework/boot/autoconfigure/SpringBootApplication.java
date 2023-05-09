@@ -45,11 +45,17 @@ import org.springframework.data.repository.Repository;
  * @author Andy Wilkinson
  * @since 1.2.0
  */
+// 注解的适用范围,Type 表示注解可以描述在类、接口、注解或枚举中
 @Target(ElementType.TYPE)
+// 表示注解的生命周期，Runtime表示运行时
 @Retention(RetentionPolicy.RUNTIME)
+// 表示注解可以记录在 javaDoc 中
 @Documented
+// 表示可以被子类继承该注解
 @Inherited
+// 表明该类为配置类
 @SpringBootConfiguration
+// 启动自动配置功能
 @EnableAutoConfiguration
 @ComponentScan(excludeFilters = { @Filter(type = FilterType.CUSTOM, classes = TypeExcludeFilter.class),
 		@Filter(type = FilterType.CUSTOM, classes = AutoConfigurationExcludeFilter.class) })
@@ -57,6 +63,7 @@ public @interface SpringBootApplication {
 
 	/**
 	 * Exclude specific auto-configuration classes such that they will never be applied.
+	 * 根据 class 来排除特定的类，使其不能加入 spring 容器，传入参数value类型是class类型。
 	 * @return the classes to exclude
 	 */
 	@AliasFor(annotation = EnableAutoConfiguration.class)
@@ -65,6 +72,7 @@ public @interface SpringBootApplication {
 	/**
 	 * Exclude specific auto-configuration class names such that they will never be
 	 * applied.
+	 * 根据 classname 来排除特定的类，使其不能加入spring容器，传入参数value类型是class的全类名字符串数组。
 	 * @return the class names to exclude
 	 * @since 1.3.0
 	 */
@@ -83,6 +91,7 @@ public @interface SpringBootApplication {
 	 * @return base packages to scan
 	 * @since 1.3.0
 	 */
+	// 指定扫描包，参数是包名的字符串数组。
 	@AliasFor(annotation = ComponentScan.class, attribute = "basePackages")
 	String[] scanBasePackages() default {};
 
@@ -101,6 +110,7 @@ public @interface SpringBootApplication {
 	 * @return base packages to scan
 	 * @since 1.3.0
 	 */
+	// 扫描特定的包，参数类型是Class类型数组。
 	@AliasFor(annotation = ComponentScan.class, attribute = "basePackageClasses")
 	Class<?>[] scanBasePackageClasses() default {};
 
