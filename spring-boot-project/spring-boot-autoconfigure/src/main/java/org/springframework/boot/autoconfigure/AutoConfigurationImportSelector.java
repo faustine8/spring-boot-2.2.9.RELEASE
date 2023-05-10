@@ -123,11 +123,14 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 		Set<String> exclusions = getExclusions(annotationMetadata, attributes);
 		// 检查要被排除的配置类，因为有些不是自动配置类，故要抛出异常
 		checkExcludedClasses(configurations, exclusions);
-		// 2.将要排除的配置类移除
+		// 2.将需要排除的配置类移除
 		configurations.removeAll(exclusions);
-		// 3.因为从 spring.factories 文件获取的自动配置类太多，如果有些不必要的自动配置类都加载进内存，会造成内存浪费，因此这里需要进行过滤
+		// 3.因为从 spring.factories 文件获取的自动配置类太多，如果有些不必要的自动配置类都加载进内存，会造成内存浪费，因此这里需要进行过滤。
+		// 注意：这里会调用 AutoConfigurationImportFilter 的 match 方法来判断是否符合 @ConditionalOnBean, @ConditionalOnClass 或 @ConditionalOnWebApplication。
+		// 这是很聪明的一种策略，如果 classpath 下有相应的 jar 包才自动配置和添加进 IoC 容器中。
 		configurations = filter(configurations, autoConfigurationMetadata);
 		// 4.获取了符合条件的自动配置类后，此时触发 AutoConfigurationImportEvent 事件，目的是告诉 ConditionEvaluationReport 条件评估报告器对象，来记录符合条件的自动配置类
+		// 该事件什么时候会被触发?  在刷新容器时调用invokeBeanFactoryPostProcessors后置处理器时触发
 		fireAutoConfigurationImportEvents(configurations, exclusions);
 		// 5.将符合条件和要排除的自动配置类封装进 AutoConfigurationEntry 对象，并返回
 		return new AutoConfigurationEntry(configurations, exclusions);
@@ -427,7 +430,7 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 							AutoConfigurationImportSelector.class.getSimpleName(),
 							deferredImportSelector.getClass().getName()));
 			// 1.调用 getAutoConfigurationEntry 方法得到自动配置类，放入 autoConfigurationEntry 对象中
-			AutoConfigurationEntry autoConfigurationEntry = ((AutoConfigurationImportSelector) deferredImportSelector)
+			AutoConfigurationEntry autoConfigurationEntry = ((AutoConfigurationImportSelector) deferredImportSelector) // 因为通过前面的分析，当前这个方法传过来的第二个参数就是 AutoConfigurationImportSelector 所以此处可以强转
 					.getAutoConfigurationEntry(getAutoConfigurationMetadata(), annotationMetadata);
 			// 2.又将封装了自动配置类的 autoConfigurationEntry 对象装进 autoConfigurationEntries 集合中
 			this.autoConfigurationEntries.add(autoConfigurationEntry);
