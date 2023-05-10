@@ -265,12 +265,19 @@ public class SpringApplication {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public SpringApplication(ResourceLoader resourceLoader, Class<?>... primarySources) {
+		// 设置资源加载器为 null (因为传进来的参数就是 null)
 		this.resourceLoader = resourceLoader;
+		// 断言加载资源类不能为 null（此时的资源类实际上就是核心启动类的 Class）
 		Assert.notNull(primarySources, "PrimarySources must not be null");
+		//将 primarySources 数组转换为 List，最后放到 LinkedHashSet 集合中
 		this.primarySources = new LinkedHashSet<>(Arrays.asList(primarySources));
+		//【1.1 通过类路径下的 class 推断应用类型，后面会根据类型初始化对应的环境。常用的一般都是 servlet 环境 】
 		this.webApplicationType = WebApplicationType.deduceFromClasspath();
+		//【1.2 初始化 classpath/META-INF/spring.factories 中已配置的 ApplicationContextInitializer 】
 		setInitializers((Collection) getSpringFactoriesInstances(ApplicationContextInitializer.class));
+		//【1.3 初始化classpath下所有已配置的 ApplicationListener 】
 		setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));
+		//【1.4 根据调用栈，推断出 main 方法所在类的类名 】
 		this.mainApplicationClass = deduceMainApplicationClass();
 	}
 
@@ -423,8 +430,11 @@ public class SpringApplication {
 	private <T> Collection<T> getSpringFactoriesInstances(Class<T> type, Class<?>[] parameterTypes, Object... args) {
 		ClassLoader classLoader = getClassLoader();
 		// Use names and ensure unique to protect against duplicates
+		// 通过指定的 classLoader 从 META-INF/spring.factories 的资源文件中，读取 key 为 type.getName() 的 value
 		Set<String> names = new LinkedHashSet<>(SpringFactoriesLoader.loadFactoryNames(type, classLoader));
+		//创建工厂实例
 		List<T> instances = createSpringFactoriesInstances(type, parameterTypes, classLoader, args, names);
+		//对Spring工厂实例排序（org.springframework.core.annotation.Order注解指定的顺序）
 		AnnotationAwareOrderComparator.sort(instances);
 		return instances;
 	}
@@ -1212,6 +1222,7 @@ public class SpringApplication {
 	 * @return the running {@link ApplicationContext}
 	 */
 	public static ConfigurableApplicationContext run(Class<?> primarySource, String... args) {
+		// 调用重载方法
 		return run(new Class<?>[] { primarySource }, args);
 	}
 
@@ -1223,6 +1234,7 @@ public class SpringApplication {
 	 * @return the running {@link ApplicationContext}
 	 */
 	public static ConfigurableApplicationContext run(Class<?>[] primarySources, String[] args) {
+		// 两件事：1.初始化 SpringApplication  2.执行run方法
 		return new SpringApplication(primarySources).run(args);
 	}
 
