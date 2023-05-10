@@ -94,6 +94,8 @@ import org.springframework.util.StringUtils;
  * and the 'spring.config.location' property can be used to specify alternative search
  * locations or specific files.
  * <p>
+ * 从默认的位置加载配置文件，将其加入上下文的 environment 变量中
+ * <p>
  *
  * @author Dave Syer
  * @author Phillip Webb
