@@ -307,12 +307,13 @@ public class SpringApplication {
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		// ConfigurableApplicationContext 是 ApplicationContext 接口的子接口。在 ApplicationContext 基础上增加了配置上下文的工具。
-		// ConfigurableApplicationContext 是容器的高级接口。
+		// ConfigurableApplicationContext 是容器的高级接口。(同时这个对象也是该方法的返回值)
 		ConfigurableApplicationContext context = null;
 		Collection<SpringBootExceptionReporter> exceptionReporters = new ArrayList<>();
 		configureHeadlessProperty();
 		// 1、获取并启动监听器
 		SpringApplicationRunListeners listeners = getRunListeners(args);
+		// 启动监听器
 		listeners.starting();
 		try {
 			ApplicationArguments applicationArguments = new DefaultApplicationArguments(args);
@@ -324,7 +325,7 @@ public class SpringApplication {
 			Banner printedBanner = printBanner(environment);
 			// 3、初始化应用上下文
 			context = createApplicationContext();
-			// 实例化 SpringBootExceptionReporter类，用来支持报告关于启动的错误
+			// 实例化 SpringBootExceptionReporter 类，用来支持报告关于启动的错误
 			exceptionReporters = getSpringFactoriesInstances(SpringBootExceptionReporter.class,
 					new Class[] { ConfigurableApplicationContext.class }, context);
 			// 4、刷新应用上下文前的准备阶段
@@ -362,7 +363,7 @@ public class SpringApplication {
 		// Create and configure the environment
 		// 1.创建并配置相应的环境
 		ConfigurableEnvironment environment = getOrCreateEnvironment();
-		// 2.根据用户配置，配置 environment系统环境
+		// 2.根据用户配置，配置 environment 系统环境
 		configureEnvironment(environment, applicationArguments.getSourceArgs());
 		ConfigurationPropertySources.attach(environment);
 		// 3.启动相应的监听器，其中一个重要的监听器 ConfigFileApplicationListener 就是加载项目配置文件的监听器。
@@ -510,7 +511,7 @@ public class SpringApplication {
 		}
 		// 将 main 函数的 args 封装成 SimpleCommandLinePropertySource 加入环境中。
 		configurePropertySources(environment, args);
-		// 激活相应的配置文件
+		// 激活相应的配置文件 (比如: prod 环境的配置)
 		configureProfiles(environment, args);
 	}
 
