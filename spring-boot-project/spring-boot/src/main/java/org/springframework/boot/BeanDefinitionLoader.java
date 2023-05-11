@@ -78,13 +78,18 @@ class BeanDefinitionLoader {
 	BeanDefinitionLoader(BeanDefinitionRegistry registry, Object... sources) {
 		Assert.notNull(registry, "Registry must not be null");
 		Assert.notEmpty(sources, "Sources must not be empty");
+		// 核心启动类
 		this.sources = sources;
+		// 注解形式的 Bean 定义读取器。比如: @Configuration、@Bean、@Component、@Controller、@Service 等等
 		this.annotatedReader = new AnnotatedBeanDefinitionReader(registry);
+		// XML 形式的 Bean 定义读取器
 		this.xmlReader = new XmlBeanDefinitionReader(registry);
 		if (isGroovyPresent()) {
 			this.groovyReader = new GroovyBeanDefinitionReader(registry);
 		}
+		// 类路径扫描器
 		this.scanner = new ClassPathBeanDefinitionScanner(registry);
+		// 扫描器添加排除过滤器
 		this.scanner.addExcludeFilter(new ClassExcludeFilter(sources));
 	}
 
@@ -132,15 +137,19 @@ class BeanDefinitionLoader {
 
 	private int load(Object source) {
 		Assert.notNull(source, "Source must not be null");
+		// 从 Class 加载(此时的 source 是主类，所以肯定能进入这个 if 语句)
 		if (source instanceof Class<?>) {
 			return load((Class<?>) source);
 		}
+		// 从 Resource 加载
 		if (source instanceof Resource) {
 			return load((Resource) source);
 		}
+		// 从 Package 加载
 		if (source instanceof Package) {
 			return load((Package) source);
 		}
+		// 从 CharSequence 加载
 		if (source instanceof CharSequence) {
 			return load((CharSequence) source);
 		}
@@ -153,7 +162,9 @@ class BeanDefinitionLoader {
 			GroovyBeanDefinitionSource loader = BeanUtils.instantiateClass(source, GroovyBeanDefinitionSource.class);
 			load(loader);
 		}
+		// 核心启动类上是否添加有 @Component 注解 (核心启动类实际上在最底层是有 @Component 注解的，所以此处也能进入 if 条件语句)
 		if (isComponent(source)) {
+			// 将核心启动类的 BeanDefinition 注册进 beanDefinitionMap 中
 			this.annotatedReader.register(source);
 			return 1;
 		}

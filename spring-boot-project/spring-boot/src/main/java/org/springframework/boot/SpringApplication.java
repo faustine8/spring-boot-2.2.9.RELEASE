@@ -390,31 +390,45 @@ public class SpringApplication {
 
 	private void prepareContext(ConfigurableApplicationContext context, ConfigurableEnvironment environment,
 			SpringApplicationRunListeners listeners, ApplicationArguments applicationArguments, Banner printedBanner) {
+		// 设置容器环境（将之前构建的环境对象，设置到 context 中）
 		context.setEnvironment(environment);
+		// 执行容器后置处理 (其实也是在给 context 设置值)
 		postProcessApplicationContext(context);
+		// 执行容器中的 ApplicationContextInitializer 包括 spring.factories 和通过三种方式自定义配置的
 		applyInitializers(context);
+		// 向各个监听器发送容器已经准备好的事件 (此处的 listener 的具体类型是 SpringApplicationRunListeners)
 		listeners.contextPrepared(context);
 		if (this.logStartupInfo) {
 			logStartupInfo(context.getParent() == null);
 			logStartupProfileInfo(context);
 		}
+		// ***************** 至此，方法要完成的第一件事已经完成，下面开始做第二件事(Bean对象创建) *****************
+
 		// Add boot specific singleton beans
+		// 将 main 方法中的 args 参数封装成单例 Bean，注册进容器
 		ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
 		beanFactory.registerSingleton("springApplicationArguments", applicationArguments);
+		// 将 printedBanner 也封装成单例，注册进容器
 		if (printedBanner != null) {
 			beanFactory.registerSingleton("springBootBanner", printedBanner);
 		}
 		if (beanFactory instanceof DefaultListableBeanFactory) {
+			// 设置允许 Bean 定义信息被覆盖
 			((DefaultListableBeanFactory) beanFactory)
 					.setAllowBeanDefinitionOverriding(this.allowBeanDefinitionOverriding);
 		}
+		// 处理懒加载
 		if (this.lazyInitialization) {
 			context.addBeanFactoryPostProcessor(new LazyInitializationBeanFactoryPostProcessor());
 		}
+
+		// ********** 以下才是重点内容 **********
 		// Load the sources
 		Set<Object> sources = getAllSources();
 		Assert.notEmpty(sources, "Sources must not be empty");
+		// 加载我们的启动类，将启动类注入容器 (第二个参数意思是取出数组中的第一个元素)
 		load(context, sources.toArray(new Object[0]));
+		// 发布容器已加载事件
 		listeners.contextLoaded(context);
 	}
 
@@ -711,6 +725,7 @@ public class SpringApplication {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Loading source " + StringUtils.arrayToCommaDelimitedString(sources));
 		}
+		// 创建 BeanDefinitionLoader
 		BeanDefinitionLoader loader = createBeanDefinitionLoader(getBeanDefinitionRegistry(context), sources);
 		if (this.beanNameGenerator != null) {
 			loader.setBeanNameGenerator(this.beanNameGenerator);
