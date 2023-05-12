@@ -63,10 +63,15 @@ import org.springframework.web.servlet.DispatcherServlet;
  * @author Brian Clozel
  * @since 2.0.0
  */
+// 加载顺序
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
+// 配置类。注解的值表示禁用缓存，每次都会获取一个全新的配置对象。
 @Configuration(proxyBeanMethods = false)
+// 当前必须是一个 web 项目，且是`Servlet`项目的时候才会被解析。
 @ConditionalOnWebApplication(type = Type.SERVLET)
+// 在类路径下必须存在 DispatcherServlet.class 才行
 @ConditionalOnClass(DispatcherServlet.class)
+// 设置配置加载顺序。当前表示要晚于 ServletWebServerFactoryAutoConfiguration 加载。
 @AutoConfigureAfter(ServletWebServerFactoryAutoConfiguration.class)
 public class DispatcherServletAutoConfiguration {
 
@@ -87,6 +92,7 @@ public class DispatcherServletAutoConfiguration {
 	protected static class DispatcherServletConfiguration {
 
 		@Bean(name = DEFAULT_DISPATCHER_SERVLET_BEAN_NAME)
+		// 创建一个实例，然后添加一些属性设置，注入 IoC 容器中。
 		public DispatcherServlet dispatcherServlet(HttpProperties httpProperties, WebMvcProperties webMvcProperties) {
 			DispatcherServlet dispatcherServlet = new DispatcherServlet();
 			dispatcherServlet.setDispatchOptionsRequest(webMvcProperties.isDispatchOptionsRequest());
@@ -100,6 +106,7 @@ public class DispatcherServletAutoConfiguration {
 		@Bean
 		@ConditionalOnBean(MultipartResolver.class)
 		@ConditionalOnMissingBean(name = DispatcherServlet.MULTIPART_RESOLVER_BEAN_NAME)
+		// 将这个特殊的组件类重命名，以防你注入了这个类型的 Bean 但是名字没起对
 		public MultipartResolver multipartResolver(MultipartResolver resolver) {
 			// Detect if the user has created a MultipartResolver but named it incorrectly
 			return resolver;

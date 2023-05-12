@@ -57,9 +57,13 @@ import org.springframework.web.filter.ForwardedHeaderFilter;
  */
 @Configuration(proxyBeanMethods = false)
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
+// 因为当前引入了 Tomcat 的相关 jar 包，所以这个条件是满足的
 @ConditionalOnClass(ServletRequest.class)
+// 根据类路径下的类判断，如果有 react 相关的就是 react, 如果没有 servlet 相关的类就是 none, 否则就是 servlet 应用。
 @ConditionalOnWebApplication(type = Type.SERVLET)
+// 开启 ServerProperties 类的属性注入
 @EnableConfigurationProperties(ServerProperties.class)
+// 引入了一个自动配置的注册器和三种 Web 容器。这也是为什么说 SpringBoot 默认支持这三种容器的原因。
 @Import({ ServletWebServerFactoryAutoConfiguration.BeanPostProcessorsRegistrar.class,
 		ServletWebServerFactoryConfiguration.EmbeddedTomcat.class,
 		ServletWebServerFactoryConfiguration.EmbeddedJetty.class,

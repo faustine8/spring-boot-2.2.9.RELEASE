@@ -150,6 +150,7 @@ public class ServletWebServerApplicationContext extends GenericWebApplicationCon
 	protected void onRefresh() {
 		super.onRefresh();
 		try {
+			// 核心方法：会获取嵌入式的 Servlet 容器工厂，并通过工厂来获取 Servlet 容器
 			createWebServer();
 		}
 		catch (Throwable ex) {
@@ -160,6 +161,7 @@ public class ServletWebServerApplicationContext extends GenericWebApplicationCon
 	@Override
 	protected void finishRefresh() {
 		super.finishRefresh();
+		// 启动「需要在 Tomcat 启动时完成启动的 Servlet」；检查 Connector 是否都启动完成；打印最终启动完成日志
 		WebServer webServer = startWebServer();
 		if (webServer != null) {
 			publishEvent(new ServletWebServerInitializedEvent(webServer, this));
@@ -176,7 +178,9 @@ public class ServletWebServerApplicationContext extends GenericWebApplicationCon
 		WebServer webServer = this.webServer;
 		ServletContext servletContext = getServletContext();
 		if (webServer == null && servletContext == null) {
+			// 如果使用的是 Tomcat 容器，此处会获取到 TomcatServletWebServerFactory 工厂实例
 			ServletWebServerFactory factory = getWebServerFactory();
+			// 此处调用了 getWebServer 方法，完成了 Tomcat 的配置和启动流程。
 			this.webServer = factory.getWebServer(getSelfInitializer());
 		}
 		else if (servletContext != null) {
