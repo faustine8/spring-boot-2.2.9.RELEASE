@@ -228,7 +228,9 @@ public class ServletWebServerApplicationContext extends GenericWebApplicationCon
 		prepareWebApplicationContext(servletContext);
 		registerApplicationScope(servletContext);
 		WebApplicationContextUtils.registerEnvironmentBeans(getBeanFactory(), servletContext);
+		// 此处就会获取到 DispatcherServletRegistrationBean
 		for (ServletContextInitializer beans : getServletContextInitializerBeans()) {
+			// 调用方法
 			beans.onStartup(servletContext);
 		}
 	}

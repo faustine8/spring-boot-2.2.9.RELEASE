@@ -45,6 +45,7 @@ public abstract class RegistrationBean implements ServletContextInitializer, Ord
 
 	@Override
 	public final void onStartup(ServletContext servletContext) throws ServletException {
+		// 判断当前到底是一个 filter，还是 servlet，还是listener
 		String description = getDescription();
 		if (!isEnabled()) {
 			logger.info(StringUtils.capitalize(description) + " was not registered (disabled)");
