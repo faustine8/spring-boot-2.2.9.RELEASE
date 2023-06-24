@@ -736,6 +736,7 @@ public class SpringApplication {
 		if (this.environment != null) {
 			loader.setEnvironment(this.environment);
 		}
+		// 加载、注册核心启动类
 		loader.load();
 	}
 

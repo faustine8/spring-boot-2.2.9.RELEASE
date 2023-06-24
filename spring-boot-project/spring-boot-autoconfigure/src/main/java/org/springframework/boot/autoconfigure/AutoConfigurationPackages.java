@@ -107,7 +107,7 @@ public abstract class AutoConfigurationPackages {
 			// 设置包信息
 			beanDefinition.getConstructorArgumentValues().addIndexedArgumentValue(0, packageNames);
 			beanDefinition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
-			// 注册 BasePackages 的时候，BeanName 为当前类
+			// 注册 BasePackages 的时候，BeanName 为当前类 (AutoConfigurationPackages)
 			registry.registerBeanDefinition(BEAN, beanDefinition);
 		}
 	}
